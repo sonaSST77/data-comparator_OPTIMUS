@@ -13,12 +13,9 @@ if not cislo_vlny:
     cislo_vlny = "202506010001"
     print('Byla použita defaultní vlna "202506010001"')
 
-# Určení data podle aktuálního času
 now = datetime.datetime.now()
-if now.hour < 11:
-    datum = (now - datetime.timedelta(days=1)).strftime("%d-%m-%Y")
-else:
-    datum = now.strftime("%d-%m-%Y")
+dnes = now.strftime("%d-%m-%Y")
+vcera = (now - datetime.timedelta(days=1)).strftime("%d-%m-%Y")
 
 try:
     connection = oracledb.connect(
@@ -27,14 +24,36 @@ try:
         dsn=dsn
     )
     print("Připojení k databázi bylo úspěšné!")
+    cursor = connection.cursor()
+
+    print(f"Dnešní datum: {dnes}")
+
+    # Nejprve zjistíme, jestli existují záznamy s dnešním datem
+    kontrola_query = """
+    SELECT COUNT(*) FROM MIGUSERP.REP_REKONCIL_STAV_V_EDENIKU
+    WHERE REPORT_DATE >= TO_DATE(:report_date, 'DD-MM-YYYY')
+    """
+    cursor.execute(kontrola_query, {"report_date": dnes})
+    pocet = cursor.fetchone()[0]
+
+    if pocet > 0:
+        datum = dnes
+        print(f"Používá se dnešní datum: {datum}")
+    else:
+        datum = vcera
+        print(f"Nebyly nalezeny záznamy s dnešním datem, používá se včerejší datum: {datum}")
 
     cursor = connection.cursor()
     query = """
     SELECT * FROM MIGUSERP.REP_REKONCIL_STAV_V_EDENIKU rrsve
     WHERE RRSVE.WAVE_ID = :wave_id
       AND rrsve.STAV = 'storno'
-      AND REPORT_DATE > TO_DATE(:report_date, 'DD-MM-YYYY')
+      AND REPORT_DATE >= TO_DATE(:report_date, 'DD-MM-YYYY')
     """
+    print("Použitý SQL dotaz:")
+    print(query)
+    print("Parametry:", {"wave_id": cislo_vlny, "report_date": datum})
+
     cursor.execute(query, {"wave_id": cislo_vlny, "report_date": datum})
 
     columns = [col[0] for col in cursor.description]
