@@ -93,7 +93,7 @@ try:
         df3 = pd.DataFrame()
 
      # Uložení do Excelu na dva listy
-    with pd.ExcelWriter("vysledek.xlsx") as writer:
+    with pd.ExcelWriter("Reconcil_pred_TO.xlsx") as writer:
         df.to_excel(writer, sheet_name="Storno_denik", index=False)
         df2.to_excel(writer, sheet_name="O2_sluzby_stornovanych", index=False)
         df3.to_excel(writer, sheet_name="TV_sluzby_aktivni", index=False)
