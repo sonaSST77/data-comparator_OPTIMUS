@@ -1,11 +1,16 @@
 import oracledb
 import pandas as pd
 import datetime
+import requests
+
 
 # Zadejte své údaje
 username = "so081267"
 password = "msaDBSona666666"
 dsn = "ocsxpptdb02r-scan.ux.to2cz.cz:1521/COMSA07R"  # např. "localhost:1521/COMSAR"
+
+# Teams webhook URL (vložte svůj vlastní)
+webhook_url = "https://outlook.office.com/webhook/TVUJ_WEBHOOK_URL"
 
 now = datetime.datetime.now()
 dnes = now.strftime("%d-%m-%Y")
@@ -33,6 +38,15 @@ try:
     if pocet > 0:
         datum = dnes
         print(f"Máme dnešní data v reportu, používá se dnešní datum!!!")
+        # Odeslání zprávy do Teams
+        zprava = {
+            "text": f"V databázi jsou data pro dnešní den {dnes}."
+        }
+        response = requests.post(webhook_url, json=zprava)
+        if response.status_code == 200:
+            print("Zpráva byla odeslána do Teams.")
+        else:
+            print("Chyba při odesílání do Teams:", response.text)
     else:
         datum = vcera
         print(f"Nemáme dnešní data v reportu, budeme čekat!!!")
