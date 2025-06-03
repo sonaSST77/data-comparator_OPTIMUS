@@ -91,9 +91,12 @@ try:
         df3 = df2[df2["STAV_TV_SLUZEB"].notnull() & (df2["STAV_TV_SLUZEB"] != "")]
     else:
         df3 = pd.DataFrame()
+    # Vytvoření názvu souboru s datem
+    today = datetime.datetime.now().strftime("%Y%m%d")
+    filename = f"Reconcil_pred_TO_{today}.xlsx"
 
      # Uložení do Excelu na dva listy
-    with pd.ExcelWriter("Reconcil_pred_TO.xlsx") as writer:
+    with pd.ExcelWriter(filename) as writer:
         df.to_excel(writer, sheet_name="Storno_denik", index=False)
         df2.to_excel(writer, sheet_name="O2_sluzby_stornovanych", index=False)
         df3.to_excel(writer, sheet_name="TV_sluzby_aktivni", index=False)

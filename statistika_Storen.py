@@ -1,5 +1,6 @@
 import oracledb
 import pandas as pd
+import datetime
 
 # Přihlašovací údaje
 username = "so081267"
@@ -36,8 +37,10 @@ try:
     df = pd.DataFrame(data, columns=columns)
 
     # Uložení do Excelu
-    df.to_excel("statistika_storen.xlsx", index=False)
-    print("Výsledek byl uložen do souboru statistika_storen.xlsx")
+    today = datetime.datetime.now().strftime("%Y%m%d")
+    filename = f"statistika_storen_{today}.xlsx"
+    df.to_excel(filename, index=False)
+    print(f"Výsledek byl uložen do souboru {filename}")
 
     cursor.close()
     connection.close()
