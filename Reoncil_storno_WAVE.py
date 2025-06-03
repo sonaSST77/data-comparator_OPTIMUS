@@ -69,10 +69,11 @@ try:
     for id_platce in id_platce_list:
         # Zde napište svůj druhý dotaz, např.:
         query2 = """
-        SELECT * FROM MIGUSERP.REP_REKONCIL_O2_SLUZBY 
+        SELECT *
+        FROM MIGUSERP.REP_REKONCIL_O2_SLUZBY 
         WHERE PLATCE_ID = :id_platce 
-        and WAVE_ID = :wave_id  
-        AND REPORT_DATE > TO_DATE(:report_date, 'DD-MM-YYYY')
+          AND WAVE_ID = :wave_id  
+          AND REPORT_DATE > TO_DATE(:report_date, 'DD-MM-YYYY')
         """
         cursor.execute(query2, {"id_platce": id_platce, "wave_id": cislo_vlny, "report_date": datum})
         data2 = cursor.fetchall()
