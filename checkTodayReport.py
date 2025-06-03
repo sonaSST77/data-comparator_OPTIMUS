@@ -1,16 +1,21 @@
 import oracledb
 import pandas as pd
 import datetime
-import requests
-
+import smtplib
+from email.mime.text import MIMEText
 
 # Zadejte své údaje
 username = "so081267"
 password = "msaDBSona666666"
 dsn = "ocsxpptdb02r-scan.ux.to2cz.cz:1521/COMSA07R"  # např. "localhost:1521/COMSAR"
 
-# Teams webhook URL (vložte svůj vlastní)
-webhook_url = "https://outlook.office.com/webhook/TVUJ_WEBHOOK_URL"
+# Nastavení e-mailu
+odesilatel = "sona.stradova@o2.cz"
+prijemce = "sona.stradova@o2.cz"  # Teams kanál má speciální e-mail, získejte jej v Teams
+smtp_server = "smtp.office365.com"   # nebo např. smtp.office365.com
+smtp_port = 587
+smtp_user = "sona.stradova@o2.cz"
+smtp_pass = "AjetuJaro2024"
 
 now = datetime.datetime.now()
 dnes = now.strftime("%d-%m-%Y")
@@ -38,15 +43,19 @@ try:
     if pocet > 0:
         datum = dnes
         print(f"Máme dnešní data v reportu, používá se dnešní datum!!!")
-        # Odeslání zprávy do Teams
-        zprava = {
-            "text": f"V databázi jsou data pro dnešní den {dnes}."
-        }
-        response = requests.post(webhook_url, json=zprava)
-        if response.status_code == 200:
-            print("Zpráva byla odeslána do Teams.")
-        else:
-            print("Chyba při odesílání do Teams:", response.text)
+        # Odeslání e-mailu
+        subject = "Report: Data pro dnešní den jsou k dispozici"
+        body = f"V databázi jsou data pro datum {dnes}."
+        msg = MIMEText(body)
+        msg["Subject"] = subject
+        msg["From"] = odesilatel
+        msg["To"] = prijemce
+
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(smtp_user, smtp_pass)
+            server.sendmail(odesilatel, prijemce, msg.as_string())
+        print("E-mail byl odeslán.")
     else:
         datum = vcera
         print(f"Nemáme dnešní data v reportu, budeme čekat!!!")
