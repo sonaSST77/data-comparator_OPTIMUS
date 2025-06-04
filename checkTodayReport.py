@@ -3,6 +3,7 @@ import pandas as pd
 import datetime
 import smtplib
 from email.mime.text import MIMEText
+import os
 
 # Zadejte své údaje
 username = "so081267"
@@ -56,6 +57,17 @@ try:
         #    server.login(smtp_user, smtp_pass)
         #    server.sendmail(odesilatel, prijemce, msg.as_string())
         #print("E-mail byl odeslán.")
+
+         # Vytvoření textového souboru s aktuálním datem a časem v adresáři 'vystupy'
+        output_dir = "vystupy"
+        os.makedirs(output_dir, exist_ok=True)
+        now_str = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"report_ready_{now_str}.txt"
+        filepath = os.path.join(output_dir, filename)
+        with open(filepath, "w", encoding="utf-8") as f:
+            f.write(f"Data pro datum {dnes} byla nalezena v {now_str}.\n")
+        print(f"Soubor {filepath} byl vytvořen.")
+
     else:
         datum = vcera
         print(f"Nemáme dnešní data v reportu, budeme čekat!!!")
