@@ -1,6 +1,7 @@
 import oracledb
 import pandas as pd
 import datetime
+import os
 
 # Zadejte své údaje
 username = "so081267"
@@ -92,9 +93,12 @@ try:
         df3 = df2[df2["STAV_TV_SLUZEB"].notnull() & (df2["STAV_TV_SLUZEB"] != "")]
     else:
         df3 = pd.DataFrame()
-    # Vytvoření názvu souboru s datem
-    today = datetime.datetime.now().strftime("%Y%m%d")
-    filename = f"Reconcil_pred_TO_{today}.xlsx"
+
+    # Vytvoření názvu souboru s datem a časem, uložení do podsložky 'vystupy'
+    today = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_dir = "vystupy"
+    os.makedirs(output_dir, exist_ok=True)
+    filename = os.path.join(output_dir, f"Reconcil_pred_TO_{today}.xlsx")
 
      # Uložení do Excelu na dva listy
     with pd.ExcelWriter(filename) as writer:
