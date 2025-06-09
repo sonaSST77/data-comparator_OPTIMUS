@@ -90,7 +90,7 @@ try:
 
     # Výběr záznamů, kde STAV_TV_SLUZEB není prázdné (není None ani NaN ani "")
     if not df2.empty and "STAV_TV_SLUZEB" in df2.columns:
-        df3 = df2[df2["STAV_TV_SLUZEB"].notnull() & (df2["STAV_TV_SLUZEB"] != "")]
+        df3 = df2[df2["STAV_TV_SLUZEB"].notnull() & (df2["STAV_TV_SLUZEB"] != "")].copy()
     else:
         df3 = pd.DataFrame()
 
@@ -100,7 +100,26 @@ try:
     os.makedirs(output_dir, exist_ok=True)
     filename = os.path.join(output_dir, f"Reconcil_pred_TO_{today}.xlsx")
 
-     # Uložení do Excelu na dva listy
+    if not df3.empty and "PLATCE_ID" in df3.columns:
+        platci = df3["PLATCE_ID"].unique().tolist()
+        format_strings = ','.join([':id'+str(i) for i in range(len(platci))])
+        query_min = f"""
+            SELECT ID_PLATCE, MIN(REPORT_DATE) AS MIN_REPORT_DATE
+            FROM MIGUSERP.REP_REKONCIL_STAV_V_EDENIKU
+            WHERE ID_PLATCE IN ({format_strings})
+            GROUP BY ID_PLATCE
+        """
+        params = {f'id{i}': platci[i] for i in range(len(platci))}
+        cursor.execute(query_min, params)
+        min_dates = cursor.fetchall()
+        min_dates_dict = {row[0]: row[1] for row in min_dates}
+        df3["MIN_REPORT_DATE"] = df3["PLATCE_ID"].map(min_dates_dict)
+        # Přesunout MIN_REPORT_DATE na první pozici
+        cols = df3.columns.tolist()
+        cols.insert(0, cols.pop(cols.index("MIN_REPORT_DATE")))
+        df3 = df3[cols]
+
+     # Uložení do Excelu na tri listy
     with pd.ExcelWriter(filename) as writer:
         df.to_excel(writer, sheet_name="Storno_denik", index=False)
         df2.to_excel(writer, sheet_name="O2_sluzby_stornovanych", index=False)

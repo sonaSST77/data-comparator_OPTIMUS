@@ -4,7 +4,7 @@ import datetime
 import smtplib
 from email.mime.text import MIMEText
 import os
-import requests
+
 
 # Zadejte své údaje
 username = "so081267"
@@ -41,7 +41,7 @@ try:
     cursor.execute(kontrola_query, {"report_date": dnes})
     pocet = cursor.fetchone()[0]
 
-    if pocet >= 0:
+    if pocet > 0:
         datum = dnes
         print(f"Máme dnešní data v reportu, používá se dnešní datum!!!")
         # Odeslání e-mailu
