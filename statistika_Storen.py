@@ -25,11 +25,11 @@ try:
     cursor = connection.cursor()
     # Dotaz: pro každého zákazníka (ID_PLATCE) najdi nejstarší REPORT_DATE se stavem 'storno'
     query = """
-    SELECT ID_PLATCE, MIN(REPORT_DATE) AS START_STORNO_DATE
+    SELECT ID_PLATCE, CU_REF_NO , CA_REF_NO , MIN(REPORT_DATE) AS START_STORNO_DATE
     FROM MIGUSERP.REP_REKONCIL_STAV_V_EDENIKU
     WHERE STAV = 'storno'
     AND WAVE_ID = :wave_id
-    GROUP BY ID_PLATCE
+    GROUP BY ID_PLATCE, CU_REF_NO , CA_REF_NO
     ORDER BY START_STORNO_DATE
     """
     cursor.execute(query, {"wave_id": cislo_vlny})
