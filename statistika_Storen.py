@@ -8,11 +8,19 @@ username = "so081267"
 password = "msaDBSona666666"
 dsn = "ocsxpptdb02r-scan.ux.to2cz.cz:1521/COMSA07R"
 
-# Zadejte číslo vlny jako vstupní parametr
-cislo_vlny = input("Zadejte číslo vlny (default pouzita 202506010001): ")
-if not cislo_vlny:
+# Načtení čísla vlny ze souboru parametey.txt
+param_file = "parametry.txt"
+if os.path.exists(param_file):
+    with open(param_file, "r", encoding="utf-8") as f:
+        cislo_vlny = f.read().strip()
+    if not cislo_vlny:
+        cislo_vlny = "202506010001"
+        print('Soubor byl prázdný, použita defaultní vlna "202506010001"')
+    else:
+        print(f'Načteno číslo vlny ze souboru: {cislo_vlny}')
+else:
     cislo_vlny = "202506010001"
-    print('Byla použita defaultní vlna "202506010001"')
+    print('Soubor parametey.txt nenalezen, použita defaultní vlna "202506010001"')
 
 try:
     connection = oracledb.connect(
