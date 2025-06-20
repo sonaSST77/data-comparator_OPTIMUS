@@ -4,19 +4,20 @@ import datetime
 import os
 from db_connect import get_db_connection
 
-# Načtení čísla vlny ze souboru parametey.txt
-param_file = "parametry.txt"
+# Načtení čísla vlny (nebo více hodnot oddělených čárkou) ze souboru parametry/parametry.txt s klíčem "cislo_vlny" nebo zadání uživatelem
+param_file = os.path.join("parametry", "parametry.txt")
+cisla_vlny = None
 if os.path.exists(param_file):
     with open(param_file, "r", encoding="utf-8") as f:
-        cislo_vlny = f.read().strip()
-    if not cislo_vlny:
-        cislo_vlny = "202506010001"
-        print('Soubor byl prázdný, použita defaultní vlna "202506010001"')
-    else:
-        print(f'Načteno číslo vlny ze souboru: {cislo_vlny}')
+        for line in f:
+            if line.strip().startswith("cislo_vlny="):
+                cisla_vlny = line.strip().split("=", 1)[1]
+                break
+if not cisla_vlny:
+    cisla_vlny = input('Zadejte číslo vlny (nebo více hodnot oddělených čárkou): ')
 else:
-    cislo_vlny = "202506010001"
-    print('Soubor parametey.txt nenalezen, použita defaultní vlna "202506010001"')
+    print(f'Načteno číslo vlny ze souboru: {cisla_vlny}')
+cisla_vlny_list = [v.strip() for v in cisla_vlny.split(',') if v.strip()]
 
 try:
     connection = get_db_connection()
@@ -28,11 +29,12 @@ try:
     SELECT ID_PLATCE, CU_REF_NO , CA_REF_NO , MIN(REPORT_DATE) AS START_STORNO_DATE
     FROM MIGUSERP.REP_REKONCIL_STAV_V_EDENIKU
     WHERE STAV = 'storno'
-    AND WAVE_ID = :wave_id
+    AND WAVE_ID IN ({})
     GROUP BY ID_PLATCE, CU_REF_NO , CA_REF_NO
     ORDER BY START_STORNO_DATE
-    """
-    cursor.execute(query, {"wave_id": cislo_vlny})
+    """.format(','.join([f':wave_id{i}' for i in range(len(cisla_vlny_list))]))
+    params = {f'wave_id{i}': v for i, v in enumerate(cisla_vlny_list)}
+    cursor.execute(query, params)
     columns = [col[0] for col in cursor.description]
     data = cursor.fetchall()
     df = pd.DataFrame(data, columns=columns)

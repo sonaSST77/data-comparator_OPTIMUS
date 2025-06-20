@@ -4,19 +4,20 @@ import datetime
 import os
 from db_connect import get_db_connection
 
-# Načtení čísla vlny ze souboru parametey.txt
-param_file = "parametry.txt"
+# Načtení čísla vlny (nebo více hodnot oddělených čárkou) ze souboru parametry/parametry.txt s klíčem "cislo_vlny" nebo zadání uživatelem
+param_file = os.path.join("parametry", "parametry.txt")
+cisla_vlny = None
 if os.path.exists(param_file):
     with open(param_file, "r", encoding="utf-8") as f:
-        cislo_vlny = f.read().strip()
-    if not cislo_vlny:
-        cislo_vlny = "202506010001"
-        print('Soubor byl prázdný, použita defaultní vlna "202506010001"')
-    else:
-        print(f'Načteno číslo vlny ze souboru: {cislo_vlny}')
+        for line in f:
+            if line.strip().startswith("cislo_vlny="):
+                cisla_vlny = line.strip().split("=", 1)[1]
+                break
+if not cisla_vlny:
+    cisla_vlny = input('Zadejte číslo vlny (nebo více hodnot oddělených čárkou): ')
 else:
-    cislo_vlny = "202506010001"
-    print('Soubor parametey.txt nenalezen, použita defaultní vlna "202506010001"')
+    print(f'Načteno číslo vlny ze souboru: {cisla_vlny}')
+cisla_vlny_list = [v.strip() for v in cisla_vlny.split(',') if v.strip()]
 
 now = datetime.datetime.now()
 dnes = now.strftime("%d-%m-%Y")
@@ -45,17 +46,16 @@ try:
         print(f"Nebyly nalezeny záznamy s dnešním datem, používá se včerejší datum: {datum}")
 
     cursor = connection.cursor()
+    # úprava SQL dotazu pro více hodnot
     query = """
     SELECT * FROM MIGUSERP.REP_REKONCIL_STAV_V_EDENIKU rrsve
-    WHERE RRSVE.WAVE_ID = :wave_id
+    WHERE RRSVE.WAVE_ID IN ({})
       AND rrsve.STAV = 'storno'
       AND REPORT_DATE >= TO_DATE(:report_date, 'DD-MM-YYYY')
-    """
-    print("Použitý SQL dotaz:")
-    print(query)
-    print("Parametry:", {"wave_id": cislo_vlny, "report_date": datum})
-
-    cursor.execute(query, {"wave_id": cislo_vlny, "report_date": datum})
+    """.format(','.join([f':wave_id{i}' for i in range(len(cisla_vlny_list))]))
+    params = {f'wave_id{i}': v for i, v in enumerate(cisla_vlny_list)}
+    params['report_date'] = datum
+    cursor.execute(query, params)
 
     columns = [col[0] for col in cursor.description]
     data = cursor.fetchall()
@@ -73,10 +73,13 @@ try:
         SELECT *
         FROM MIGUSERP.REP_REKONCIL_O2_SLUZBY 
         WHERE PLATCE_ID = :id_platce 
-          AND WAVE_ID = :wave_id  
+          AND WAVE_ID IN ({})
           AND REPORT_DATE > TO_DATE(:report_date, 'DD-MM-YYYY')
-        """
-        cursor.execute(query2, {"id_platce": id_platce, "wave_id": cislo_vlny, "report_date": datum})
+        """.format(','.join([f':wave_id{i}' for i in range(len(cisla_vlny_list))]))
+        params2 = {f'wave_id{i}': v for i, v in enumerate(cisla_vlny_list)}
+        params2['id_platce'] = id_platce
+        params2['report_date'] = datum
+        cursor.execute(query2, params2)
         data2 = cursor.fetchall()
         columns2 = [col[0] for col in cursor.description]
         for row in data2:

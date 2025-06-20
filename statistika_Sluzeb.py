@@ -4,19 +4,21 @@ import datetime
 import os
 from db_connect import get_db_connection
 
-# Načtení čísla vlny ze souboru parametey.txt
-param_file = "parametry.txt"
+# Načtení čísla vlny (nebo více hodnot oddělených čárkou) ze souboru parametry/parametry.txt s klíčem "cislo_vlny" nebo zadání uživatelem
+param_file = os.path.join("parametry", "parametry.txt")
+cisla_vlny = None
 if os.path.exists(param_file):
     with open(param_file, "r", encoding="utf-8") as f:
-        cislo_vlny = f.read().strip()
-    if not cislo_vlny:
-        cislo_vlny = "202506010001"
-        print('Soubor byl prázdný, použita defaultní vlna "202506010001"')
-    else:
-        print(f'Načteno číslo vlny ze souboru: {cislo_vlny}')
+        for line in f:
+            if line.strip().startswith("cislo_vlny="):
+                cisla_vlny = line.strip().split("=", 1)[1]
+                break
+if not cisla_vlny:
+    cisla_vlny = input('Zadejte číslo vlny (nebo více hodnot oddělených čárkou): ')
 else:
-    cislo_vlny = "202506010001"
-    print('Soubor parametey.txt nenalezen, použita defaultní vlna "202506010001"')
+    print(f'Načteno číslo vlny ze souboru: {cisla_vlny}')
+# Zpracování na seznam hodnot
+cisla_vlny_list = [v.strip() for v in cisla_vlny.split(',') if v.strip()]
 
 
 now = datetime.datetime.now()
@@ -47,20 +49,24 @@ try:
     cursor = connection.cursor()
     # Vybírám pouze nestornované plátce v AISA a kontroluju jestli nemají Deactivovanou služdu
     # TV můžeme v O2 rušit hned a Inet k poslednímu v měsíci
+    # úprava SQL dotazu pro více hodnot
     query = """
-    SELECT * FROM						
-    MIGUSERP.REP_REKONCIL_O2_SLUZBY rros											
+    SELECT * FROM
+    MIGUSERP.REP_REKONCIL_O2_SLUZBY rros
     WHERE REPORT_DATE >= TO_DATE(:report_date, 'DD-MM-YYYY')
-    AND WAVE_ID = :wave_id
-    AND PLATCE_ID NOT IN (							
-        SELECT DISTINCT ID_PLATCE							
-        FROM MIGUSERP.REP_REKONCIL_STAV_V_EDENIKU rrsve							
-            WHERE RRSVE.WAVE_ID = :wave_id
+    AND WAVE_ID IN ({})
+    AND PLATCE_ID NOT IN (
+        SELECT DISTINCT ID_PLATCE
+        FROM MIGUSERP.REP_REKONCIL_STAV_V_EDENIKU rrsve
+            WHERE RRSVE.WAVE_ID IN ({})
             AND REPORT_DATE >= TO_DATE(:report_date, 'DD-MM-YYYY')
-            AND STAV = 'storno'							
-    )										
-    """
-    cursor.execute(query, {"wave_id": cislo_vlny, "report_date": datum})
+            AND STAV = 'storno'
+    )
+    """.format(','.join([f':wave_id{i}' for i in range(len(cisla_vlny_list))]), ','.join([f':wave_id{i}' for i in range(len(cisla_vlny_list))]))
+    # Příprava parametrů
+    params = {f'wave_id{i}': v for i, v in enumerate(cisla_vlny_list)}
+    params['report_date'] = datum
+    cursor.execute(query, params)
     columns = [col[0] for col in cursor.description]
     data = cursor.fetchall()
     df = pd.DataFrame(data, columns=columns)
@@ -79,12 +85,13 @@ try:
         query2 = """
         SELECT PLATCE_ID, CU_REF_NO, CA_REF_NO, MIN(REPORT_DATE) AS REPORT_DATE
         FROM MIGUSERP.REP_REKONCIL_O2_SLUZBY
-        WHERE WAVE_ID = :wave_id
+        WHERE WAVE_ID IN ({})
         AND ZÁVAŽNOST = 'Error'
         GROUP BY PLATCE_ID, CU_REF_NO, CA_REF_NO
-        """
+        """.format(','.join([f':wave_id{i}' for i in range(len(cisla_vlny_list))]))
+        params2 = {f'wave_id{i}': v for i, v in enumerate(cisla_vlny_list)}
         cursor2 = connection.cursor()
-        cursor2.execute(query2, {"wave_id": cislo_vlny})
+        cursor2.execute(query2, params2)
         columns2 = [col[0] for col in cursor2.description]
         data2 = cursor2.fetchall()
         df2 = pd.DataFrame(data2, columns=columns2)
