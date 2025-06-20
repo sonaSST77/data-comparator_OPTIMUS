@@ -4,12 +4,8 @@ import datetime
 import smtplib
 from email.mime.text import MIMEText
 import os
+from db_connect import get_db_connection
 
-
-# Zadejte své údaje
-username = "so081267"
-password = "msaDBSona666666"
-dsn = "ocsxpptdb02r-scan.ux.to2cz.cz:1521/COMSA07R"  # např. "localhost:1521/COMSAR"
 
 # Nastavení e-mailu
 odesilatel = "reconcilOptimus@o2.cz"
@@ -23,11 +19,7 @@ dnes = now.strftime("%d-%m-%Y")
 vcera = (now - datetime.timedelta(days=1)).strftime("%d-%m-%Y")
 
 try:
-    connection = oracledb.connect(
-        user=username,
-        password=password,
-        dsn=dsn
-    )
+    connection = get_db_connection()
     print("Připojení k databázi bylo úspěšné!")
     cursor = connection.cursor()
 
