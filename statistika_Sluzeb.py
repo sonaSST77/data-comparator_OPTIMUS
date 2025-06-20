@@ -5,7 +5,7 @@ import os
 
 # Přihlašovací údaje
 username = "so081267"
-password = "msaDBSona666666"
+password = "msaDBSona111222"
 dsn = "ocsxpptdb02r-scan.ux.to2cz.cz:1521/COMSA07R"
 
 # Načtení čísla vlny ze souboru parametey.txt
@@ -78,10 +78,32 @@ try:
     output_dir = "vystupy"
     os.makedirs(output_dir, exist_ok=True)
     filename = os.path.join(output_dir, f"statistika_sluzeb_{today}.xlsx")
-    df.to_excel(filename, index=False)
+
+    # Uložení hlavního DataFrame na první list a příprava druhého listu
+    with pd.ExcelWriter(filename, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False, sheet_name="Detail")
+
+        # Druhý list: výběr požadovaných sloupců a nejstarší REPORT_DATE pro konkrétní WAVE_ID
+        query2 = """
+        SELECT PLATCE_ID, CU_REF_NO, CA_REF_NO, MIN(REPORT_DATE) AS REPORT_DATE
+        FROM MIGUSERP.REP_REKONCIL_O2_SLUZBY
+        WHERE WAVE_ID = :wave_id
+        AND ZÁVAŽNOST = 'Error'
+        GROUP BY PLATCE_ID, CU_REF_NO, CA_REF_NO
+        """
+        cursor2 = connection.cursor()
+        cursor2.execute(query2, {"wave_id": cislo_vlny})
+        columns2 = [col[0] for col in cursor2.description]
+        data2 = cursor2.fetchall()
+        df2 = pd.DataFrame(data2, columns=columns2)
+        df2.to_excel(writer, index=False, sheet_name="Souhrn")
+        cursor2.close()
+
     print(f"Výsledek byl uložen do souboru {filename}")
 
     cursor.close()
     connection.close()
 except Exception as e:
     print("Chyba při připojení nebo dotazu:", e)
+
+# Všechny další odpovědi budou v češtině.
