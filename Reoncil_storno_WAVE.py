@@ -2,11 +2,7 @@ import oracledb
 import pandas as pd
 import datetime
 import os
-
-# Zadejte své údaje
-username = "so081267"
-password = "msaDBSona666666"
-dsn = "ocsxpptdb02r-scan.ux.to2cz.cz:1521/COMSA07R"  # např. "localhost:1521/COMSAR"
+from db_connect import get_db_connection
 
 # Načtení čísla vlny ze souboru parametey.txt
 param_file = "parametry.txt"
@@ -27,11 +23,7 @@ dnes = now.strftime("%d-%m-%Y")
 vcera = (now - datetime.timedelta(days=1)).strftime("%d-%m-%Y")
 
 try:
-    connection = oracledb.connect(
-        user=username,
-        password=password,
-        dsn=dsn
-    )
+    connection = get_db_connection()
     print("Připojení k databázi bylo úspěšné!")
     cursor = connection.cursor()
 
