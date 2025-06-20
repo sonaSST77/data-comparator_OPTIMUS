@@ -1,6 +1,7 @@
 import oracledb
+import os
 
-def get_db_connection(config_file="db_config.txt"):
+def get_db_connection(config_file=os.path.join("parametry", "db_config.txt")):
     params = {}
     with open(config_file, "r", encoding="utf-8") as f:
         for line in f:
