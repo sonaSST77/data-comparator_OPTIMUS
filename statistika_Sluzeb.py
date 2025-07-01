@@ -81,15 +81,15 @@ try:
     with pd.ExcelWriter(filename, engine="openpyxl") as writer:
         df.to_excel(writer, index=False, sheet_name="Detail")
 
-        # Druhý list: výběr požadovaných sloupců a nejstarší REPORT_DATE pro konkrétní WAVE_ID
+        # Druhý list: nový výběr dat bez podmínky status_reason NOT LIKE ('STOP%')
         query2 = """
-        SELECT PLATCE_ID, CU_REF_NO, CA_REF_NO, MIN(REPORT_DATE) AS REPORT_DATE
-        FROM MIGUSERP.REP_REKONCIL_O2_SLUZBY
-        WHERE WAVE_ID IN ({})
-        AND ZÁVAŽNOST = 'Error'
-        GROUP BY PLATCE_ID, CU_REF_NO, CA_REF_NO
+        SELECT * FROM
+            MIGUSERP.REP_REKONCIL_O2_SLUZBY rros
+            WHERE REPORT_DATE >= TO_DATE(:report_date, 'DD-MM-YYYY')
+            AND WAVE_ID IN ({})
         """.format(','.join([f':wave_id{i}' for i in range(len(cisla_vlny_list))]))
         params2 = {f'wave_id{i}': v for i, v in enumerate(cisla_vlny_list)}
+        params2['report_date'] = datum
         cursor2 = connection.cursor()
         cursor2.execute(query2, params2)
         columns2 = [col[0] for col in cursor2.description]
@@ -97,6 +97,16 @@ try:
         df2 = pd.DataFrame(data2, columns=columns2)
         df2.to_excel(writer, index=False, sheet_name="Souhrn")
         cursor2.close()
+
+        # Třetí list: SQL dotazy pro přehled
+        sql_overview = pd.DataFrame({
+            'Dotaz': ['Detail', 'Souhrn'],
+            'SQL': [
+                query.strip().replace('\n', ' ').replace('    ', ' '),
+                query2.strip().replace('\n', ' ').replace('    ', ' ')
+            ]
+        })
+        sql_overview.to_excel(writer, index=False, sheet_name="SQL_dotazy")
 
     print(f"Výsledek byl uložen do souboru {filename}")
 
