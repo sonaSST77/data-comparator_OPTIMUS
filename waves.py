@@ -1,3 +1,5 @@
+# Skript pro export dat z tabulky MIGUSERP.LX_CETIN_PM_MIGRATION_WAVE
+# Výsledek je uložen do souboru waves.txt
 import oracledb
 from db_connect import get_db_connection
 
